@@ -72,7 +72,7 @@ Connector.getTimeInfo = () => {
 };
 
 Connector.isPlaying = () => {
-	return $('.html5-video-player').hasClass('playing-mode');
+	return Util.hasElementClass('.html5-video-player', 'playing-mode');
 };
 
 Connector.getUniqueID = () => {
@@ -84,7 +84,7 @@ Connector.getUniqueID = () => {
 };
 
 Connector.isScrobblingAllowed = () => {
-	if ($('.ad-showing').length > 0) {
+	if (document.querySelector('.ad-showing') !== null) {
 		return false;
 	}
 
@@ -115,7 +115,11 @@ Connector.applyFilter(MetadataFilter.getYoutubeFilter().append({
 }));
 
 function setupEventListener() {
-	$(videoSelector).on('timeupdate', Connector.onStateChanged);
+	// TODO Add MutationObserver
+	const videoElement = document.querySelector(videoSelector);
+	if (videoElement) {
+		videoElement.addEventListener('timeupdate', Connector.onStateChanged);
+	}
 }
 
 function areChaptersAvailable() {
