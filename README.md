@@ -61,10 +61,10 @@ Before building the extension you should install dependencies:
 > npm install
 
 # Build the extension for Chrome
-> npx grunt build:chrome
+> npx gulp build --browser chrome
 
 # Build the extension for Firefox
-> npx grunt build:firefox
+> npx gulp build --browser firefox
 ```
 
 The built extension is available in `build` directory. You can install it as an

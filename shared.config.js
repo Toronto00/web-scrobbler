@@ -1,3 +1,5 @@
+const path = require('path');
+
 const srcDir = 'src';
 const buildDir = 'build';
 
@@ -16,6 +18,16 @@ const extensionIds = {
 };
 
 const manifestFile = 'manifest.json';
+
+const knownArguments = {
+	string: ['browser', 'mode'],
+	default: { browser: browserChrome, mode: modeDevelopment },
+};
+
+const argumentsDescription = {
+	browser: 'Target browser',
+	mode: 'Build mode',
+};
 
 /**
  * Throw an error if the extension doesn't support a given browser.
@@ -88,11 +100,58 @@ function getExtensionId(browser) {
 	return extensionIds[browser];
 }
 
+function getArgumentDescription(...args) {
+	return args.reduce((acc, arg) => {
+		if (arg in argumentsDescription) {
+			acc[arg] = argumentsDescription[arg];
+			return acc;
+		}
+
+		throw new Error(`Unknown argument: ${arg}`);
+	}, {});
+}
+
+/**
+ * Parse CLI arguments and return an object containing CLI arguments and their
+ * values.
+ *
+ * Opionally, validate arguments values. If one of arguments is not valid,
+ * or missing, throw an error.
+ *
+ * By default, arguments value are validated.
+ *
+ * @param {Boolean} validate Validate arguments values
+ *
+ * @return {Object} CLI arguments and arguments values
+ *
+ * @throws {TypeError}
+ */
+function parseCliArguments({ validate = true } = {}) {
+	const parseArgs = require('minimist');
+	const parsedArgs = parseArgs(process.argv.slice(2), knownArguments);
+
+	if (validate) {
+		const { browser, mode } = parsedArgs;
+
+		assertBrowserIsSupported(browser);
+		assertBuildModeIsValid(mode);
+	}
+
+	return parsedArgs;
+}
+
+function resolve(...p) {
+	return path.resolve(__dirname, ...p);
+}
+
 module.exports = {
 	assertBrowserIsSupported,
 	assertBuildModeIsValid,
 	configureTsCompilerForTests,
+	parseCliArguments,
 	getExtensionId,
+	getArgumentDescription,
+	resolve,
 
 	buildDir,
 	srcDir,

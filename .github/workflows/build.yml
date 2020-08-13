@@ -25,8 +25,7 @@ jobs:
 
     - name: Build the extension for Chrome
       run: |
-        npx grunt clean:build
-        npx grunt build:chrome
+        npx gulp build --browser chrome
         cp -r build web-scrobbler-chrome
 
     - name: Upload the extension for Chrome as an artifact
@@ -37,8 +36,7 @@ jobs:
 
     - name: Build the extension for Firefox
       run: |
-        npx grunt clean:build
-        npx grunt build:firefox
+        npx gulp build --browser firefox
         cp -r build web-scrobbler-firefox
 
     - name: Upload the extension for Firefox as an artifact

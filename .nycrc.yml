@@ -1,5 +1,5 @@
 exclude:
-  - '.grunt/**'
+  - 'tasks/**'
   - 'tests/**'
   - '*.js'
 extends: '@istanbuljs/nyc-config-typescript'

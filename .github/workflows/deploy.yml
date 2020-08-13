@@ -29,8 +29,8 @@ jobs:
 
     - name: Create zipballs
       run: |
-        npx grunt dist:chrome
-        npx grunt dist:firefox
+        npx gulp dist --browser chrome
+        npx gulp dist --browser firefox
 
     - name: Publish the extension for Chrome
       uses: trmcnvn/chrome-addon@v2

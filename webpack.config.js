@@ -1,5 +1,4 @@
 const fs = require('fs');
-const path = require('path');
 
 const { preprocess } = require('preprocess');
 const { minify } = require('terser');
@@ -27,8 +26,9 @@ const {
 
 	manifestFile,
 
-	assertBrowserIsSupported,
 	getExtensionId,
+	parseCliArguments,
+	resolve,
 } = require('./shared.config');
 
 /**
@@ -68,8 +68,6 @@ const projectFiles = [
 	'package.json',
 ];
 
-const defaultBrowser = browserChrome;
-
 const isDevServer = !!process.env.WEBPACK_DEV_SERVER;
 
 const packageFile = require('./package.json');
@@ -80,16 +78,17 @@ const packageFile = require('./package.json');
  */
 const sharedStyles = ['bootstrap', 'base'];
 
-module.exports = (browserArg) => {
-	const browser = getBrowserFromArgs(browserArg);
-	assertBrowserIsSupported(browser);
+module.exports = () => {
+	let { browser, mode } = parseCliArguments();
 
 	if (isDevServer) {
-		process.env.NODE_ENV = modeDevelopment;
+		mode = modeDevelopment;
 	}
 
+	process.env.NODE_ENV = mode;
+
 	return {
-		devtool: getDevtool(),
+		devtool: getDevtool(mode),
 		devServer: {
 			// https://github.com/webpack/webpack-dev-server/issues/1604
 			disableHostCheck: true,
@@ -97,13 +96,13 @@ module.exports = (browserArg) => {
 			writeToDisk: true,
 		},
 		entry: createEntries(),
-		mode: getMode(),
+		mode,
 		module: {
 			rules: [
 				{
 					test: /\.css$/i,
 					use: [
-						getMode() === modeDevelopment
+						mode === modeDevelopment
 							? 'vue-style-loader'
 							: MiniCssExtractPlugin.loader,
 						'css-loader',
@@ -118,7 +117,7 @@ module.exports = (browserArg) => {
 					test: /\.[jt]s$/,
 					use: {
 						loader: 'preprocess-loader',
-						options: getPreprocessFlags(browser),
+						options: getPreprocessFlags(browser, mode),
 					},
 				},
 				{
@@ -140,7 +139,7 @@ module.exports = (browserArg) => {
 				},
 			],
 		},
-		optimization: createOptimization(),
+		optimization: createOptimization(mode),
 		output: {
 			chunkFilename: `${vendorDir}/[id].js`,
 			filename: '[name].js',
@@ -148,7 +147,7 @@ module.exports = (browserArg) => {
 			publicPath: '/',
 		},
 		performance: { hints: false },
-		plugins: createPlugins(browser),
+		plugins: createPlugins(browser, mode),
 		resolve: {
 			extensions: ['.js', '.ts'],
 			modules: ['node_modules'],
@@ -159,28 +158,15 @@ module.exports = (browserArg) => {
 };
 
 /**
- * Return a browser name from a command line argument.
- *
- * @param {String} browserArg Argument of the main function
- *
- * @return {String} Browser name
- */
-function getBrowserFromArgs(browserArg) {
-	if (browserArg) {
-		return browserArg;
-	}
-
-	return process.argv[2] || defaultBrowser;
-}
-
-/**
  * Return a style of source mapping. Returns false (means no source maps are
  * generated) if the current mode is production.
  *
+ * @param {String} mode Build mode (development or production)
+ *
  * @return {String} Devtool name
  */
-function getDevtool() {
-	if (getMode() === modeProduction) {
+function getDevtool(mode) {
+	if (mode === modeProduction) {
 		return 'inline-source-map';
 	}
 
@@ -208,16 +194,6 @@ function getEntryScriptPath(entryName) {
 }
 
 /**
- * Get current mode from the Node.js environment variable. Return "development"
- * mode, if Node.js environment variable is not set.
- *
- * @return {String} Mode value
- */
-function getMode() {
-	return process.env.NODE_ENV || modeDevelopment;
-}
-
-/**
  * Return a new entry object for a HTML page. This object is used to create
  * entrypoints and HtmlWebpackPlugin instances.
  *
@@ -235,13 +211,14 @@ function getHtmlEntry(entryName, templateName = null) {
  * Return an object containing flags for `preprocess` module.
  *
  * @param {String} browser Browser name
+ * @param {String} buildMode Build mode (development or production)
  *
  * @return {Object} Flags
  */
-function getPreprocessFlags(browser) {
+function getPreprocessFlags(browser, buildMode) {
 	return {
 		[browser.toUpperCase()]: true,
-		[getMode().toUpperCase()]: true,
+		[buildMode.toUpperCase()]: true,
 	};
 }
 
@@ -334,10 +311,12 @@ function createHtmlPluginsFromEntries(entries) {
 /**
  * Return an optimization object. Used in production mode only.
  *
+ * @param {String} buildMode Build mode (development or production)
+ *
  * @return {Object} Optimization object
  */
-function createOptimization() {
-	if (getMode() === modeDevelopment) {
+function createOptimization(buildMode) {
+	if (buildMode === modeDevelopment) {
 		return undefined;
 	}
 
@@ -382,10 +361,11 @@ function createOptimization() {
  * Create a list of webpack plugins used to build the extension.
  *
  * @param {String} browser Browser name
+ * @param {String} buildMode Build mode (development or production)
  *
  * @return {Object[]} Array of webpack plugins
  */
-function createPlugins(browser) {
+function createPlugins(browser, buildMode) {
 	const patterns = [
 		...vendorFiles.map((path) => {
 			return {
@@ -404,7 +384,7 @@ function createPlugins(browser) {
 				from: `${srcDir}/${path}/*.js`,
 				to: resolve(buildDir, path),
 				transform(contents) {
-					return transformContentScript(contents, browser);
+					return transformContentScript(contents, browser, buildMode);
 				},
 				flatten: true,
 			};
@@ -422,7 +402,7 @@ function createPlugins(browser) {
 			from: resolve(srcDir, manifestFile),
 			to: resolve(buildDir, manifestFile),
 			transform(contents) {
-				return transformManifest(contents, browser);
+				return transformManifest(contents, browser, buildMode);
 			},
 		},
 	];
@@ -439,7 +419,7 @@ function createPlugins(browser) {
 		...createHtmlPluginsFromEntries(getUiPagesEntries()),
 		...createHtmlPluginsFromEntries(getUiPopupsEntries()),
 		new ImageminPlugin({
-			disable: getMode() !== modeProduction,
+			disable: buildMode !== modeProduction,
 		}),
 		new BannerPlugin({
 			banner: 'name: [name]',
@@ -447,24 +427,25 @@ function createPlugins(browser) {
 	];
 }
 
-function resolve(...p) {
-	return path.resolve(__dirname, ...p);
-}
-
 /**
  * Preprocess and optimize content script code.
  *
  * @param {Buffer} contents Content script code
  * @param {String} browser Browser name
+ * @param {String} buildMode Build mode (development or production)
  *
  * @return {String} Transfrormed content script code
  */
-function transformContentScript(contents, browser) {
-	const scriptCode = preprocess(contents, getPreprocessFlags(browser), {
-		type: 'js',
-	});
+function transformContentScript(contents, browser, buildMode) {
+	const scriptCode = preprocess(
+		contents,
+		getPreprocessFlags(browser, buildMode),
+		{
+			type: 'js',
+		}
+	);
 
-	if (getMode() === modeDevelopment) {
+	if (buildMode === modeDevelopment) {
 		return scriptCode;
 	}
 
@@ -476,10 +457,11 @@ function transformContentScript(contents, browser) {
  *
  * @param {Buffer} contents Manifest contents
  * @param {String} browser Browser name
+ * @param {String} buildMode Build mode (development or production)
  *
  * @return {String} Transfrormed manifest contents
  */
-function transformManifest(contents, browser) {
+function transformManifest(contents, browser, buildMode) {
 	const manifest = JSON.parse(contents);
 
 	manifest.version = packageFile.version;
@@ -503,7 +485,7 @@ function transformManifest(contents, browser) {
 		}
 	}
 
-	if (getMode() === modeDevelopment) {
+	if (buildMode === modeDevelopment) {
 		manifest['content_security_policy'] =
 			// eslint-disable-next-line quotes
 			"script-src 'self' 'unsafe-eval'; object-src 'self'";

@@ -56,8 +56,7 @@ Connectors development is explained in [this][ConnectorsDev].
 ### Coding conventions
 
 We use a number of linters to verify the source code. Please ensure before
-committing the changes they meet our requirements by running `grunt lint`.
-If you're not familiar with Grunt, please read [this article][Grunt].
+committing the changes they meet our requirements by running `npm run lint`.
 
 We also use EditorConfig, which helps to keep code in the same code style
 in different code editors and IDE's. If you haven't used EditorConfig before,
@@ -68,7 +67,6 @@ you can visit [EditorConfig website][EditorConfig] for further information.
 [Discord-Server]: https://discord.com/invite/u99wNWw
 [DebugExtension]: https://github.com/web-scrobbler/web-scrobbler/wiki/Debug-the-extension
 [EditorConfig]: http://editorconfig.org/#overview
-[Grunt]: http://gruntjs.com/getting-started
 [ReportBugs]: http://www.chiark.greenend.org.uk/~sgtatham/bugs.html
 [SetupDevEnv]: https://github.com/web-scrobbler/web-scrobbler/wiki/Setup-development-environment
 [TranslateHowto]: https://github.com/web-scrobbler/web-scrobbler/wiki/Translate-the-extension
