@@ -1,6 +1,5 @@
 {
   "name": "Web Scrobbler",
-  "version": "2.37.0",
 
   "description": "__MSG_extDescription__",
   "icons": {
@@ -65,8 +64,10 @@
     "default_popup": "/ui/popups/unsupported.html"
   },
 
-  "content_scripts": [{
-    "matches": ["<all_urls>"],
-    "js": ["connectors/dummy.js"]
-  }]
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["connectors/dummy.js"]
+    }
+  ]
 }
