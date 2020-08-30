@@ -86,22 +86,23 @@ async function injectScripts(
 	tabId: number,
 	connector: ConnectorEntry
 ): Promise<InjectResult> {
-	const scripts = [...contentScripts, connector.js, starterScript];
+	// https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/executeScript
+	const scripts = [...contentScripts, connector.js, starterScript].map(
+		(file) => `/${file}`
+	);
 
 	for (const file of scripts) {
 		const allFrames = connector.allFrames || false;
-
-		console.log(`Injecting ${file}`);
-		/* @ifdef FIREFOX **
 		try {
-		/* @endif */
-		await browser.tabs.executeScript(tabId, { file, allFrames });
-		/* @ifdef FIREFOX **
+			await browser.tabs.executeScript(tabId, { file, allFrames });
+
+			console.log(`Injected ${file}`);
 		} catch (e) {
-			// Firefox throws an error if a content script returns no value.
-			console.error(e);
+			// Firefox throws an error if a content script returns no value,
+			// so we should catch it, and continue injecting scripts.
+
+			console.warn(`Unable to inject ${file}: ${(e as Error).message}`);
 		}
-		/* @endif */
 	}
 
 	return InjectResult.Matched;
