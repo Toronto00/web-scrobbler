@@ -489,7 +489,7 @@ input {
 }
 
 .debug-container {
-	margin-left: 0.5rem;
+	margin: 0.5rem;
 	max-width: var(--popup-width);
 }
 
