@@ -24,6 +24,8 @@
     "@types/chai": "4.2.12",
     "@types/chai-as-promised": "7.1.3",
     "@types/mocha": "8.0.0",
+    "@typescript-eslint/eslint-plugin": "^4.7.0",
+    "@typescript-eslint/parser": "^4.7.0",
     "@vue/compiler-sfc": "3.0.2",
     "chai": "4.2.0",
     "chai-as-promised": "7.1.1",
@@ -31,7 +33,8 @@
     "copy-webpack-plugin": "6.0.2",
     "css-loader": "3.6.0",
     "eslint": "^7.13.0",
-    "eslint-config-web-scrobbler": "1.1.0",
+    "eslint-config-web-scrobbler": "2.0.2",
+    "eslint-plugin-vue": "^7.1.0",
     "gulp": "4.0.2",
     "gulp-eslint": "6.0.0",
     "gulp-html-validate": "0.1.0",
@@ -83,7 +86,10 @@
     "clean-coverage": "rm -rf ./coverage"
   },
   "eslintConfig": {
-    "extends": "web-scrobbler/typescript"
+    "extends": [
+      "web-scrobbler/typescript",
+      "web-scrobbler/vue"
+    ]
   },
   "prettier": "prettier-config-web-scrobbler",
   "remark": {
