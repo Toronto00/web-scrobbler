@@ -9,45 +9,33 @@ import { ListenBrainzScrobbler } from '@/background/scrobbler/listenbrainz-scrob
 
 import { SongInfo, LoveStatus } from '@/background/object/song';
 
-/**
- * Scrobblers that are bound, meaning they have valid session IDs.
- */
-const boundScrobblers: BaseScrobbler[] = [];
-
-/**
- * Scrobblers that are registered and that can be bound.
- */
-const registeredScrobblers: BaseScrobbler[] = [
-	new LastFmScrobbler(),
-	new LibreFmScrobbler(),
-	new ListenBrainzScrobbler(),
-];
-
-/**
- * Check if scrobbler is in given array of scrobblers.
- *
- * @param scrobbler Scrobbler instance
- * @param array Array of scrobblers
- *
- * @return True if scrobbler is in array, false otherwise
- */
-function isScrobblerInArray(
-	scrobbler: BaseScrobbler,
-	array: BaseScrobbler[]
-): boolean {
-	return array.some((s) => {
-		return s.getId() === scrobbler.getId();
-	});
-}
-
 export const ScrobbleManager = new (class {
+	private boundScrobblers: BaseScrobbler[];
+	private registeredScrobblers: BaseScrobbler[];
+
+	constructor() {
+		/**
+		 * Scrobblers that are bound, meaning they have valid session IDs.
+		 */
+		this.boundScrobblers = [];
+
+		/**
+		 * Scrobblers that are registered and that can be bound.
+		 */
+		this.registeredScrobblers = [
+			new LastFmScrobbler(),
+			new LibreFmScrobbler(),
+			new ListenBrainzScrobbler(),
+		];
+	}
+
 	/**
 	 * Bind all registered scrobblers.
 	 *
 	 * @return Bound scrobblers
 	 */
 	async bindAllScrobblers(): Promise<BaseScrobbler[]> {
-		for (const scrobbler of registeredScrobblers) {
+		for (const scrobbler of this.registeredScrobblers) {
 			try {
 				await scrobbler.getSession();
 				this.bindScrobbler(scrobbler);
@@ -56,7 +44,7 @@ export const ScrobbleManager = new (class {
 			}
 		}
 
-		return boundScrobblers;
+		return this.boundScrobblers;
 	}
 
 	/**
@@ -65,8 +53,8 @@ export const ScrobbleManager = new (class {
 	 * @param scrobbler Scrobbler instance
 	 */
 	bindScrobbler(scrobbler: BaseScrobbler): void {
-		if (!isScrobblerInArray(scrobbler, boundScrobblers)) {
-			boundScrobblers.push(scrobbler);
+		if (!this.isScrobblerBound(scrobbler)) {
+			this.boundScrobblers.push(scrobbler);
 			console.log(`Bind ${scrobbler.getLabel()} scrobbler`);
 		}
 	}
@@ -77,9 +65,9 @@ export const ScrobbleManager = new (class {
 	 * @param scrobbler Scrobbler instance
 	 */
 	unbindScrobbler(scrobbler: BaseScrobbler) {
-		if (isScrobblerInArray(scrobbler, boundScrobblers)) {
-			const index = boundScrobblers.indexOf(scrobbler);
-			boundScrobblers.splice(index, 1);
+		if (this.isScrobblerBound(scrobbler)) {
+			const index = this.boundScrobblers.indexOf(scrobbler);
+			this.boundScrobblers.splice(index, 1);
 
 			console.log(`Unbind ${scrobbler.getLabel()} scrobbler`);
 		} else {
@@ -95,7 +83,7 @@ export const ScrobbleManager = new (class {
 	 * @return Promise resolved with array of song info objects
 	 */
 	getSongInfo(songInfo: SongInfo): Promise<ScrobblerSongInfo[] | null[]> {
-		const scrobblers = registeredScrobblers.filter((scrobbler) => {
+		const scrobblers = this.registeredScrobblers.filter((scrobbler) => {
 			return scrobbler.canLoadSongInfo();
 		});
 		console.log(`Send "get info" request: ${scrobblers.length}`);
@@ -120,10 +108,12 @@ export const ScrobbleManager = new (class {
 	 * @return Promise that will be resolved then the task will complete
 	 */
 	sendNowPlaying(songInfo: SongInfo): Promise<ApiCallResult[]> {
-		console.log(`Send "now playing" request: ${boundScrobblers.length}`);
+		console.log(
+			`Send "now playing" request: ${this.boundScrobblers.length}`
+		);
 
 		return Promise.all(
-			boundScrobblers.map((scrobbler) => {
+			this.boundScrobblers.map((scrobbler) => {
 				// Forward result (including errors) to caller
 				return scrobbler.sendNowPlaying(songInfo).catch((result) => {
 					return this.processErrorResult(scrobbler, result);
@@ -140,9 +130,9 @@ export const ScrobbleManager = new (class {
 	 * @return Promise that will be resolved then the task will complete
 	 */
 	scrobble(songInfo: SongInfo): Promise<ApiCallResult[]> {
-		console.log(`Send "scrobble" request: ${boundScrobblers.length}`);
+		console.log(`Send "scrobble" request: ${this.boundScrobblers.length}`);
 
-		return this.sendScrobbleRequest(boundScrobblers, songInfo);
+		return this.sendScrobbleRequest(this.boundScrobblers, songInfo);
 	}
 
 	/**
@@ -175,7 +165,7 @@ export const ScrobbleManager = new (class {
 		songInfo: SongInfo,
 		loveStatus: LoveStatus
 	): Promise<ApiCallResult[]> {
-		const scrobblers = registeredScrobblers.filter((scrobbler) => {
+		const scrobblers = this.registeredScrobblers.filter((scrobbler) => {
 			return scrobbler.canLoveSong();
 		});
 		const requestName = loveStatus === LoveStatus.Loved ? 'love' : 'unlove';
@@ -199,7 +189,7 @@ export const ScrobbleManager = new (class {
 	 * @return Array of registered scrobblers
 	 */
 	getRegisteredScrobblers(): BaseScrobbler[] {
-		return registeredScrobblers;
+		return this.registeredScrobblers;
 	}
 
 	/**
@@ -208,7 +198,7 @@ export const ScrobbleManager = new (class {
 	 * @return Array of bound scrobblers
 	 */
 	getBoundScrobblers(): BaseScrobbler[] {
-		return boundScrobblers;
+		return this.boundScrobblers;
 	}
 
 	/**
@@ -219,7 +209,7 @@ export const ScrobbleManager = new (class {
 	 * @return Found scrobbler object
 	 */
 	getScrobblerById(scrobblerId: string): BaseScrobbler {
-		for (const scrobbler of registeredScrobblers) {
+		for (const scrobbler of this.registeredScrobblers) {
 			if (scrobbler.getId() === scrobblerId) {
 				return scrobbler;
 			}
@@ -228,7 +218,20 @@ export const ScrobbleManager = new (class {
 		return null;
 	}
 
-	sendScrobbleRequest(
+	/**
+	 * Check if a given scrobbler is bound.
+	 *
+	 * @param scrobbler Scrobbler instance
+	 *
+	 * @return True if scrobbler is in array, false otherwise
+	 */
+	isScrobblerBound(scrobbler: BaseScrobbler): boolean {
+		return this.boundScrobblers.some((s) => {
+			return s.getId() === scrobbler.getId();
+		});
+	}
+
+	private sendScrobbleRequest(
 		scrobblers: BaseScrobbler[],
 		songInfo: SongInfo
 	): Promise<ApiCallResult[]> {
@@ -252,7 +255,7 @@ export const ScrobbleManager = new (class {
 	 *
 	 * @return Promise resolved with result object
 	 */
-	async processErrorResult(
+	private async processErrorResult(
 		scrobbler: BaseScrobbler,
 		result: ApiCallResult
 	): Promise<ApiCallResult> {
