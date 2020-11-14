@@ -65,6 +65,9 @@ Before building the extension you should install dependencies:
 
 # Build the extension for Firefox
 > npx gulp build --browser firefox
+
+# Start the dev server w/ rebuild on changes and hot code reload
+> npm start --browser <browser>
 ```
 
 The built extension is available in `build` directory. You can install it as an
