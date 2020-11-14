@@ -10,7 +10,7 @@ const PluginError = require('plugin-error');
 
 const pluginName = 'gulp-find-unused-files';
 
-const serviceFiles = ['dummy.js', '.eslintrc.yml'];
+const serviceFiles = ['.eslintrc.yml'];
 const domInjectSuffix = 'dom-inject.js';
 
 const TYPE_DOM_INJECT_SCRIPT = 0x0;
