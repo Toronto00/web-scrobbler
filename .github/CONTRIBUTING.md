@@ -56,7 +56,7 @@ Connectors development is explained in [this][ConnectorsDev].
 ### Coding conventions
 
 We use a number of linters to verify the source code. Please ensure before
-committing the changes they meet our requirements by running `npm run lint`.
+committing the changes they meet our requirements by running `npx gulp lint`.
 
 We also use EditorConfig, which helps to keep code in the same code style
 in different code editors and IDE's. If you haven't used EditorConfig before,
